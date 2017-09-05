@@ -8,7 +8,7 @@ import re
 import csv
 import sys
 
-debug = True
+debug = False
 
 domain = sys.argv[1]
 media_type = sys.argv[2]
