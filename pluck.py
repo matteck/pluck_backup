@@ -29,6 +29,8 @@ cookies = {
 }
 
 pluck_csv_file = open("%s-%ss.csv" % (domain, media_type), 'w')
+log_file = open("%s-%ss.log" % (domain, media_type), 'w')
+
 pluck_csv = csv.writer(pluck_csv_file, dialect='excel')
 
 gallery_regex = re.compile(
@@ -72,14 +74,11 @@ while gallery_list_url:
                 item_url = i[0]
                 item_id = i[1]
                 item_title = i[2]
-                print (item_url, item_id, item_title)
-                sys.exit()
-                # item_url = "http://%s.abc.net.au/ver1.0/CMW/%ss/%sDetail?%sKey=%s&galleryKey=%s" % (domain, media_type, media_type, media_type, item_id, gallery_id)
                 if debug:
                     print(item_url)
                 r3 = requests.get(item_url, cookies=cookies)
                 if r3.status_code != 200:
-                    print("Couldn't retrieve item page: %s" % item_url)
+                    print("Couldn't retrieve item page: %s" % item_url, file=log_file)
                     continue
                 description = None
                 owner = None
@@ -90,7 +89,7 @@ while gallery_list_url:
                     m3 = item_description_regex.search(r3.text)
                     description = m3.group(1)
                 except AttributeError:
-                    print("Couldn't get description for %s %s in %s" % (media_type, item_id, gallery_id), file=sys.stderr)
+                    print("Couldn't get description for %s %s in %s" % (media_type, item_id, gallery_id), file=log_file)
 
                 try:
                     m3 = item_owner_regex.search(r3.text)
@@ -100,19 +99,19 @@ while gallery_list_url:
                         m3 = item_anon_owner_regex.search(r3.text)
                         owner = "anonymous"
                     except AttributeError:
-                        print("Couldn't get owner for %s %s in %s" % (media_type, item_id, gallery_id), file=sys.stderr)
+                        print("Couldn't get owner for %s %s in %s" % (media_type, item_id, gallery_id), file=log_file)
 
                 try:
                     m3 = item_tags_regex.search(r3.text)
                     tags = m3.group(1)
                 except AttributeError:
-                    print("Couldn't get tags for %s %s in %s" % (media_type, item_id, gallery_id), file=sys.stderr)
+                    print("Couldn't get tags for %s %s in %s" % (media_type, item_id, gallery_id), file=log_file)
 
                 try:
                     m3 = download_url_regex.search(r3.text)
                     download_url = m3.group(1)
                 except AttributeError:
-                    print("Couldn't get download URL for %s %s in %s" % (media_type, item_id, gallery_id), file=sys.stderr)
+                    print("Couldn't get download URL for %s %s in %s" % (media_type, item_id, gallery_id), file=log_file)
 
                 pluck_csv.writerow([gallery_id, gallery_name, item_id, download_url, item_title, owner, tags, description])
             m2 = next_item_page_regex.search(r2.text)
