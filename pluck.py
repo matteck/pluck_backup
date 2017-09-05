@@ -8,7 +8,7 @@ import re
 import csv
 import sys
 
-debug = False
+debug = True
 
 domain = sys.argv[1]
 media_type = sys.argv[2]
@@ -34,7 +34,7 @@ pluck_csv = csv.writer(pluck_csv_file, dialect='excel')
 gallery_regex = re.compile(
     '<a href="http://%s.abc.net.au/ver1.0/CMW/%ss/ManageApprovedSubmissions\?galleryKey=([^"]+)">([^<]+)</a>' % (domain,media_type), flags=re.M|re.I)
 item_regex = re.compile(
-    '<a href="http://%s.abc.net.au/ver1.0/CMW/%ss/%sDetail\?[^"]*%sKey=([a-f0-9-]+)[^"]*">([^<]+)</a>' % (domain, media_type, media_type, media_type), flags=re.M|re.I)
+    '<a href="(http://%s.abc.net.au/ver1.0/CMW/%ss/%sDetail\?[^"]*?%sKey=([a-f0-9-]+)[^"]*?)">([^<]+)</a>' % (domain, media_type, media_type, media_type), flags=re.M|re.I)
 item_description_regex = re.compile('<textarea\s+id="description".*?>(.*?)</textarea>', flags=re.M|re.S)
 item_owner_regex = re.compile('http://%s.abc.net.au/ver1.0/CMW/Users/User\?userKey=(?:expired_)?\d+">(.*?)</a>' % (domain))
 item_anon_owner_regex = re.compile('<span>\s*anonymous\s*(Anonymous)\s*</span>')
@@ -59,10 +59,8 @@ while gallery_list_url:
     galleries = gallery_regex.findall(r1.text)
     for g in galleries:
         gallery_id = g[0]
-        if gallery_id in ('8d6e331b-0d00-4ed3-94f2-58e26b196a62','b4c68ba3-27d0-4355-a657-ba2d16cc5dd0'):
-            continue
         gallery_name = g[1]
-        if re.match('\d+ Photos', gallery_name):
+        if re.match('\d+ %ss' % media_type, gallery_name, flags=re.I):
             continue
         gallery_url = "http://%s.abc.net.au/ver1.0/CMW/%ss/ManageApprovedSubmissions?galleryKey=%s&itemsPerPage=100&nextItemOffset=0&PagnAction=Next" % (domain, media_type, gallery_id)
         if debug:
@@ -71,12 +69,18 @@ while gallery_list_url:
             r2 = requests.get(gallery_url, cookies=cookies)
             items = item_regex.findall(r2.text)
             for i in items:
-                item_id = i[0]
-                item_title = i[1]
-                item_url = "http://%s.abc.net.au/ver1.0/CMW/%ss/%sDetail?%sKey=%s&galleryKey=%s" % (domain, media_type, media_type, media_type, item_id, gallery_id)
+                item_url = i[0]
+                item_id = i[1]
+                item_title = i[2]
+                print (item_url, item_id, item_title)
+                sys.exit()
+                # item_url = "http://%s.abc.net.au/ver1.0/CMW/%ss/%sDetail?%sKey=%s&galleryKey=%s" % (domain, media_type, media_type, media_type, item_id, gallery_id)
                 if debug:
                     print(item_url)
                 r3 = requests.get(item_url, cookies=cookies)
+                if r3.status_code != 200:
+                    print("Couldn't retrieve item page: %s" % item_url)
+                    continue
                 description = None
                 owner = None
                 tags = None
