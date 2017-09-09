@@ -80,9 +80,9 @@ while gallery_list_url:
     else:
         gallery_list_url = None
 
-items_todo = []
 for gallery_id in galleries_todo:
-    print("Doing gallery %s..." % gallery_id)
+    items_todo = []
+    print("Getting gallery %s..." % gallery_id)
     gallery_url = "http://%s.abc.net.au/ver1.0/CMW/%ss/ManageApprovedSubmissions?galleryKey=%s&itemsPerPage=100&nextItemOffset=0&PagnAction=Next" % (
         domain, media_type, gallery_id)
     while gallery_url:
@@ -120,7 +120,7 @@ for gallery_id in galleries_todo:
         }
         jsonRequest = json.dumps(jsonRequest)
         jsonRequest = urllib.parse.quote(jsonRequest)
-        item_url = 'http://pluck2.abc.net.au/ver1.0/sdk/js/Pluck-6.0.15?jsonRequest=%s&cb=plcksdk_0' % (jsonRequest)
+        item_url = 'http://%s.abc.net.au/ver1.0/sdk/js/Pluck-6.0.15?jsonRequest=%s&cb=plcksdk_0' % (domain, jsonRequest)
         if debug:
             print(item_url)
 
@@ -134,14 +134,17 @@ for gallery_id in galleries_todo:
         try:
             item_data = r.text[10:-2]
             item_data = json.loads(item_data)
+            status = item_data['Envelopes'][0]['Payload']['ResponseStatus']['StatusCode']
+            assert(status == 'OK')
             item_data = item_data['Envelopes'][0]['Payload'][media_type]
         except:
             print("Couldn't get data for item %s - %s" % (item_id, item_url), file=logfile)
+            continue
         for keyword in ('Title', 'Description', 'Tags'):
             try:
                 item[keyword] = item_data[keyword]
             except KeyError:
-                print("Item %s missing %s" % (item_id, keyword), file=logfile)
+                print("Item %s missing %s - " % (item_id, keyword, item_url), file=logfile)
                 item[keyword] = ''
         try:
             item['owner'] = item_data['Owner']['DisplayName']
@@ -151,14 +154,22 @@ for gallery_id in galleries_todo:
         try:
             if media_type == 'Photo':
                 item['download_url'] = item_data['Image']['FullPendingApproval']
+            else:
+                item['download_url'] = item_data['Video']['Url']
         except KeyError:
             print("Item %s missing download url - %s" % (item_id, item_url), file=logfile)
             item['download_url'] = ''
-
-
+        item['completed'] = True
+    
+    print("Writing gallery %s..." % gallery_id)
     for item in items_todo:
+        if 'completed' not in item:
+            continue
+        if debug:
+            print(item['item_id'])
         pluck_csv.writerow([gallery_id, gallery_name, item['item_id'], item['download_url'], item['Title'], item['owner'], item['Tags'], item['Description']])
-
+    logfile.flush()
+    csvfile.flush()
 
 
         # print(json.dumps(items_todo, indent=2, sort_keys=True))
