@@ -144,7 +144,7 @@ for gallery_id in galleries_todo:
             try:
                 item[keyword] = item_data[keyword]
             except KeyError:
-                print("Item %s missing %s - " % (item_id, keyword, item_url), file=logfile)
+                print("Item %s missing %s - %s" % (item_id, keyword, item_url), file=logfile)
                 item[keyword] = ''
         try:
             item['owner'] = item_data['Owner']['DisplayName']
