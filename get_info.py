@@ -45,9 +45,6 @@ if os.path.exists(csv_filename):
         for row in csvreader:
             gallery_id = row[0]
             galleries_done.add(gallery_id)
-    if debug:
-        print("Skipping completed galleries")
-        print(galleries_done)
 
 logfile = open(logfilename, 'a')
 csvfile = open(csv_filename, 'a')
@@ -59,7 +56,7 @@ gallery_list_url = 'http://%s.abc.net.au/ver1.0/CMW/%ss/?itemsPerPage=100&nextIt
 galleries_todo = {}
 while gallery_list_url:
     if debug:
-        print(gallery_list_url)
+        print("Gallery list URL: %s" % gallery_list_url)
     r = requests.get(gallery_list_url, cookies=cookies)
     galleries = gallery_regex.findall(r.text)
     for g in galleries:
@@ -72,8 +69,6 @@ while gallery_list_url:
             print("Skipping %s (done)" % gallery_id)
             continue
         galleries_todo[g[0]] = g[1]
-        if debug:
-            print(gallery_id)
     m = next_gallery_page_regex.search(r.text)
     if m:
         gallery_list_url = m.group(1)
@@ -87,7 +82,7 @@ for gallery_id in galleries_todo:
         domain, media_type, gallery_id)
     while gallery_url:
         if debug:
-            print("Gallery URL: ", gallery_url)
+            print("Gallery URL: %s" % gallery_url)
         r = requests.get(gallery_url, cookies=cookies)
         items = item_regex.findall(r.text)
         for i in items:
@@ -98,7 +93,6 @@ for gallery_id in galleries_todo:
             gallery_url = m.group(1)
         else:
             gallery_url = None
-        gallery_url = None
 
     for item in items_todo:
         item_id = item['item_id']
@@ -121,8 +115,6 @@ for gallery_id in galleries_todo:
         jsonRequest = json.dumps(jsonRequest)
         jsonRequest = urllib.parse.quote(jsonRequest)
         item_url = 'http://%s.abc.net.au/ver1.0/sdk/js/Pluck-6.0.15?jsonRequest=%s&cb=plcksdk_0' % (domain, jsonRequest)
-        if debug:
-            print(item_url)
 
         r = requests.get(item_url, cookies=cookies)
         if r.status_code != 200:
@@ -165,8 +157,6 @@ for gallery_id in galleries_todo:
     for item in items_todo:
         if 'completed' not in item:
             continue
-        if debug:
-            print(item['item_id'])
         pluck_csv.writerow([gallery_id, gallery_name, item['item_id'], item['download_url'], item['Title'], item['owner'], item['Tags'], item['Description']])
     logfile.flush()
     csvfile.flush()
