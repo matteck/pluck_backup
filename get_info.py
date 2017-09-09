@@ -16,7 +16,7 @@ media_type = sys.argv[2]
 assert(domain == "pluck" or domain == "pluck2")
 assert(media_type == "Photo" or media_type == "Video" or media_type == "Blog")
 
-print("Doing ", domain, media_type)
+print("Doing %s/%s" % (domain, media_type))
 
 cookies = {
     'SRV_ID': 'usw1web023.aws-us.pluck.com',
@@ -53,7 +53,7 @@ pluck_csv = csv.writer(csvfile, dialect='excel')
 # Get a list of gallery_ids to do
 gallery_list_url = 'http://%s.abc.net.au/ver1.0/CMW/%ss/?itemsPerPage=100&nextItemOffset=0&PagnAction=Next&searchString=' % (
     domain, media_type)
-galleries_todo = {}
+galleries_todo = []
 while gallery_list_url:
     if debug:
         print("Gallery list URL: %s" % gallery_list_url)
@@ -68,16 +68,22 @@ while gallery_list_url:
         if gallery_id in galleries_done:
             print("Skipping %s (done)" % gallery_id)
             continue
-        galleries_todo[g[0]] = g[1]
+        g = {
+            'gallery_id': gallery_id,
+            'gallery_name': gallery_name
+        }
+        galleries_todo.append(g)
     m = next_gallery_page_regex.search(r.text)
     if m:
         gallery_list_url = m.group(1)
     else:
         gallery_list_url = None
 
-for gallery_id in galleries_todo:
+for g in galleries_todo:
+    gallery_id = g['gallery_id']
+    gallery_name = g['gallery_name']
     items_todo = []
-    print("Getting gallery %s..." % gallery_id)
+    print("%s/%s: getting gallery %s" % (domain, media_type, gallery_id))
     gallery_url = "http://%s.abc.net.au/ver1.0/CMW/%ss/ManageApprovedSubmissions?galleryKey=%s&itemsPerPage=100&nextItemOffset=0&PagnAction=Next" % (
         domain, media_type, gallery_id)
     while gallery_url:
@@ -153,7 +159,7 @@ for gallery_id in galleries_todo:
             item['download_url'] = ''
         item['completed'] = True
     
-    print("Writing gallery %s..." % gallery_id)
+    print("%s/%s: writing gallery %s" % (domain, media_type, gallery_id))
     for item in items_todo:
         if 'completed' not in item:
             continue
