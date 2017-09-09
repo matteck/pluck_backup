@@ -147,7 +147,7 @@ for gallery_id in galleries_todo:
             if media_type == 'Photo':
                 item['download_url'] = item_data['Image']['FullPendingApproval']
             else:
-                item['download_url'] = item_data['Video']['Url']
+                item['download_url'] = item_data['Url']
         except KeyError:
             print("Item %s missing download url - %s" % (item_id, item_url), file=logfile)
             item['download_url'] = ''
