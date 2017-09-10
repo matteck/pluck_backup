@@ -39,8 +39,10 @@ with open(csv_filename, 'r') as csvfile:
         gallery_id = row[0]
         item_id = row[2]
         filename = url.split('/')[-1]
+        # Check if it has two extensions
+        if filename[-4:] == '.flv' and filename[-8:-7] == '.':
+            filename = filename[0:-4]
         keyname = '%s/%s/%s/%s' % (domain, media_type, gallery_id, filename)
-        print(keyname)
         if keyname in size:
             r = requests.head(url, allow_redirects=True)
             online_size = r.headers['content-length']
@@ -48,6 +50,8 @@ with open(csv_filename, 'r') as csvfile:
                 if debug:
                     print("Skipping %s size %s" % (keyname, online_size))
                 continue
+        if debug:
+            print("Getting %s" % keyname)
         r = requests.get(url, allow_redirects=True)
         if r.status_code == 200:
             o = bucket.put_object(Key=keyname, Body=r.content)
